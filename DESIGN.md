@@ -13,8 +13,16 @@ The current VibeProxy repository is a native macOS wrapper. This web implementat
 
 ## Purpose and scope
 
-A user should see which provider/account still has quota and when its windows reset,
-without opening every credential card. The first deliverable is the ledger UI, not a new routing strategy.
+The owner clarified: “cas 에서 이걸로 전환하려고 하는건데”. The product goal is to replace
+CAS account switching with this proxy, reusing the accounts already registered in CAS.
+The ledger UI is the accepted starting point, not the full product scope. A user should see remaining
+quota and reset times here, while clients use the proxy instead of switching live provider credentials.
+The intended migration is a one-time credential transfer and client cutover, not permanent CAS/proxy
+two-way synchronization. Assess running clients and refresh ownership before cutover. Preserve rollback
+material, but recognize that old copied refresh tokens may become stale after rotation.
+The owner subsequently authorized account import and usage-page verification first. Four CAS
+access-token snapshots are now registered; refresh ownership and client cutover remain pending.
+No existing sessions were stopped.
 
 ## Visible reference contract
 
@@ -42,11 +50,13 @@ Different window IDs are never silently added. The summary uses the current filt
 upstream pagination. Full plan/credit/reset actions remain available through the original Cards view.
 Search/sort remains available in a disclosure. A zero-account screen links directly to OAuth onboarding.
 
-## Known differences and pending acceptance
+## Known differences and starting-point acceptance
 
 This is a structural visual reconstruction, not a pixel-identical clone. The original is a compressed video
 with a presenter overlay, unknown font/rendering environment, and unseen lower rows/states.
 The upstream shell, localized text and existing management flows remain intact. Mobile reflows to stacked
 quota windows; the original did not establish a mobile design. Additional modern providers are retained.
 The preview sidebar is a reference-only scaffold; ledger/header/tabs are the production React components.
-Owner review of the live result is pending. No new global design-system decision is implied.
+The owner replied “맞아” after being asked whether this screen is the desired starting point.
+The initial screen/direction is accepted as the starting point; this does not approve pixel parity,
+all future screens, provider credentials, routing changes or publication. No global design-system decision is implied.

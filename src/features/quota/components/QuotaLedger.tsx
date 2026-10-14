@@ -209,9 +209,16 @@ function LedgerRow({
   const [showAll, setShowAll] = useState(false);
   const windows = ledgerWindows(entry.type, quota, t);
   const fullName = getQuotaDisplayName(entry.file);
-  const name = showEmails ? fullName : maskLedgerIdentity(fullName);
-  const plan =
+  const email = entry.file.email?.trim();
+  const name = showEmails
+    ? email && !fullName.includes(email)
+      ? `${email} · ${fullName}`
+      : fullName
+    : maskLedgerIdentity(fullName);
+  const rawPlan =
     quota && 'planType' in quota && typeof quota.planType === 'string' ? quota.planType : '';
+  const plan =
+    entry.type === 'claude' && rawPlan.startsWith('plan_') ? t(`claude_quota.${rawPlan}`) : rawPlan;
   const status = quota?.status ?? 'idle';
   return (
     <article className={styles.row} data-ledger-row={entry.type} aria-busy={status === 'loading'}>
@@ -238,13 +245,20 @@ function LedgerRow({
           ))
         ) : (
           <div className={styles.status} role={status === 'error' ? 'alert' : 'status'}>
-            {status === 'error'
-              ? resolveQuotaErrorMessage(
-                  t,
-                  quota?.errorStatus,
-                  quota?.error ?? t('common.unknown_error')
-                )
-              : t(`quota_ledger.${status === 'success' ? 'no_windows' : status}`)}
+            {status === 'error' ? (
+              <>
+                <span>
+                  {resolveQuotaErrorMessage(
+                    t,
+                    quota?.errorStatus,
+                    quota?.error ?? t('common.unknown_error')
+                  )}
+                </span>
+                {quota?.error && <small className={styles.note}>{quota.error}</small>}
+              </>
+            ) : (
+              t(`quota_ledger.${status === 'success' ? 'no_windows' : status}`)
+            )}
           </div>
         )}
         {windows.length > 3 && (
