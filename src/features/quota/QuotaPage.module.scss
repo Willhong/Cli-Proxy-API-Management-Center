@@ -4,6 +4,18 @@
  * 额度页壳层：纯布局，视觉细节都在各组件的 colocated 模块里。
  * ============================================================ */
 
+.filters {
+  summary {
+    cursor: pointer;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    padding: 4px 0;
+  }
+  &[open] summary {
+    margin-bottom: 12px;
+  }
+}
+
 .page {
   display: flex;
   flex-direction: column;

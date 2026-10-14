@@ -1,0 +1,230 @@
+.preview-banner {
+  min-height: 40px;
+  padding: 8px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  background: #272516;
+  color: #d6c68b;
+  font-size: 12px;
+  border-bottom: 1px solid #464027;
+}
+.preview-banner strong {
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.preview-banner select,
+.preview-banner button {
+  background: #343021;
+  color: #e8dcba;
+  border: 1px solid #554e35;
+  border-radius: 5px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.preview-banner a {
+  color: inherit;
+  margin-left: auto;
+}
+.reference-shell {
+  --reference-sidebar: 236px;
+  min-height: calc(100vh - 40px);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.reference-shell.is-collapsed {
+  --reference-sidebar: 68px;
+}
+.reference-sidebar {
+  width: var(--reference-sidebar);
+  position: absolute;
+  top: 41px;
+  bottom: 0;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  padding: 28px 18px;
+}
+.reference-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 36px;
+  padding: 0 6px;
+}
+.reference-brand img {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.reference-brand b {
+  font-size: 17px;
+  font-weight: 700;
+}
+.reference-brand small {
+  display: block;
+  font-size: 10px;
+  margin-top: 3px;
+  color: var(--text-tertiary);
+}
+.reference-sidebar section {
+  margin-bottom: 25px;
+}
+.reference-sidebar h2 {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 1px;
+  padding: 0 11px;
+  margin-bottom: 10px;
+}
+.reference-sidebar a {
+  min-height: 39px;
+  margin: 3px 0;
+  padding: 10px 11px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+.reference-sidebar a:hover,
+.reference-sidebar a.selected {
+  background: #343434;
+  color: var(--text-primary);
+}
+.reference-sidebar a.selected {
+  font-weight: 600;
+}
+.reference-sidebar small {
+  margin-left: auto;
+  background: #333;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 9px;
+}
+.reference-sidebar svg {
+  flex-shrink: 0;
+}
+.reference-main {
+  margin-left: var(--reference-sidebar);
+  padding: 64px 44px;
+  max-width: 1900px;
+}
+.reference-tabs {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  margin-top: 27px;
+  margin-bottom: 23px;
+}
+.reference-tabs > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.reference-view {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.reference-collapse {
+  position: absolute;
+  top: 113px;
+  left: calc(var(--reference-sidebar) - 9px);
+  height: 30px;
+  width: 19px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #292929;
+  color: #aaa;
+  border: 1px solid #393939;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.preview-notice {
+  background: #2c2a1c;
+  border: 1px solid #565034;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+.preview-notice button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  float: right;
+}
+.preview-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+}
+.preview-empty h2 {
+  margin: 15px 0;
+}
+.preview-empty a {
+  display: inline-block;
+  margin-top: 15px;
+  color: var(--text-primary);
+}
+.preview-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+.reference-image {
+  padding: 24px;
+  background: #151515;
+  color: #aaa;
+}
+.reference-image img {
+  width: 100%;
+  display: block;
+}
+.reference-image p {
+  margin-top: 14px;
+  font-size: 13px;
+}
+@media (max-width: 1100px) {
+  .reference-main {
+    padding: 40px 28px;
+  }
+  .reference-shell {
+    --reference-sidebar: 200px;
+  }
+}
+@media (max-width: 700px) {
+  .preview-banner {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .reference-shell {
+    --reference-sidebar: 0px;
+  }
+  .reference-sidebar {
+    display: none;
+  }
+  .reference-collapse {
+    display: none;
+  }
+  .reference-main {
+    padding: 30px 18px;
+    margin-left: 0;
+  }
+  .reference-tabs {
+    gap: 12px;
+  }
+  .preview-foot {
+    align-items: flex-start;
+    line-height: 1.7;
+  }
+}

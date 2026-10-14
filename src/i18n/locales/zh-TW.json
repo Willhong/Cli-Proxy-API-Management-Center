@@ -1588,6 +1588,33 @@
       }
     }
   },
+  "quota_ledger": {
+    "show": "顯示",
+    "hide": "隱藏",
+    "ledger": "帳本",
+    "cards": "卡片",
+    "view": "檢視",
+    "show_emails": "顯示信箱",
+    "hide_emails": "隱藏信箱",
+    "search_sort": "搜尋與排序",
+    "connect_account": "連接帳戶",
+    "provider_summary": "供應商配額摘要",
+    "of_capacity": "/ {{capacity}}%",
+    "sum_hint": "各帳戶剩餘百分比之和，並非共用權杖餘額。不含已停用帳戶。",
+    "known": "已載入 {{known}} / {{count}} 個帳戶",
+    "disabled_count": "{{count}} 個已停用",
+    "disabled": "已停用",
+    "remaining": "剩餘",
+    "weekly": "每週限額",
+    "session": "工作階段限額",
+    "not_loaded": "未載入",
+    "reset_unknown": "重設時間未知",
+    "no_windows": "沒有配額視窗",
+    "idle": "重新整理以載入配額",
+    "loading": "載入配額中…",
+    "more": "顯示另外 {{count}} 項",
+    "less": "收合"
+  },
   "quota_management": {
     "search_label": "搜尋帳號",
     "search_placeholder": "依檔案名稱或電子郵件搜尋",

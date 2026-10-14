@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
 import { useCountUp } from '@/hooks/motion';
 import styles from './QuotaHeader.module.scss';
@@ -10,6 +11,8 @@ export type QuotaHeaderProps = {
   refreshing: boolean;
   disableControls: boolean;
   onRefreshAll: () => void;
+  showEmails?: boolean;
+  onToggleEmails?: () => void;
 };
 
 /**
@@ -55,6 +58,16 @@ export function QuotaHeader(props: QuotaHeaderProps) {
         </p>
       </div>
       <div className={styles.actions} data-reveal>
+        {props.onToggleEmails && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={props.onToggleEmails}
+            aria-pressed={props.showEmails}
+          >
+            {t(props.showEmails ? 'quota_ledger.hide_emails' : 'quota_ledger.show_emails')}
+          </Button>
+        )}
         <button
           type="button"
           className={styles.primaryAction}

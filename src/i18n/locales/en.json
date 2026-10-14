@@ -1561,6 +1561,33 @@
       }
     }
   },
+  "quota_ledger": {
+    "show": "Show",
+    "hide": "Hide",
+    "ledger": "Ledger",
+    "cards": "Cards",
+    "view": "View",
+    "show_emails": "Show emails",
+    "hide_emails": "Hide emails",
+    "search_sort": "Search & sort",
+    "connect_account": "Connect an account",
+    "provider_summary": "Provider quota summary",
+    "of_capacity": "of {{capacity}}%",
+    "sum_hint": "Sum of per-account remaining percentages, not a pooled token balance. Disabled accounts are excluded.",
+    "known": "Remaining known for {{known}} of {{count}}",
+    "disabled_count": "{{count}} disabled",
+    "disabled": "Disabled",
+    "remaining": "Remaining",
+    "weekly": "Weekly limit",
+    "session": "Session limit",
+    "not_loaded": "Not loaded",
+    "reset_unknown": "Reset time unavailable",
+    "no_windows": "No quota windows reported",
+    "idle": "Refresh quota to load",
+    "loading": "Loading quota…",
+    "more": "Show {{count}} more",
+    "less": "Show less"
+  },
   "quota_management": {
     "search_label": "Search accounts",
     "search_placeholder": "Search by filename or email",

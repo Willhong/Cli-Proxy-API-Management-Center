@@ -1564,6 +1564,33 @@
       }
     }
   },
+  "quota_ledger": {
+    "show": "Показать",
+    "hide": "Скрыть",
+    "ledger": "Реестр",
+    "cards": "Карточки",
+    "view": "Вид",
+    "show_emails": "Показать email",
+    "hide_emails": "Скрыть email",
+    "search_sort": "Поиск и сортировка",
+    "connect_account": "Подключить аккаунт",
+    "provider_summary": "Сводка квот провайдеров",
+    "of_capacity": "из {{capacity}}%",
+    "sum_hint": "Сумма оставшихся процентов аккаунтов, не общий баланс токенов. Отключённые аккаунты исключены.",
+    "known": "Загружено {{known}} из {{count}}",
+    "disabled_count": "Отключено: {{count}}",
+    "disabled": "Отключён",
+    "remaining": "Осталось",
+    "weekly": "Недельный лимит",
+    "session": "Лимит сессии",
+    "not_loaded": "Не загружено",
+    "reset_unknown": "Время сброса неизвестно",
+    "no_windows": "Окна квот не получены",
+    "idle": "Обновите для загрузки квоты",
+    "loading": "Загрузка квоты…",
+    "more": "Ещё {{count}}",
+    "less": "Свернуть"
+  },
   "quota_management": {
     "search_label": "Поиск аккаунтов",
     "search_placeholder": "Поиск по имени файла или электронной почте",
