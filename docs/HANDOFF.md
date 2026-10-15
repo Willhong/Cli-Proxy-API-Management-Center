@@ -1,38 +1,42 @@
 # Theo fork: local run and handoff
 
-## Current state (2026-10-15)
+## Current state (2026-10-16)
 
-The proxy is the live Codex gateway for the Mac and nucbox; Claude still runs through CAS.
+The proxy runs on nucbox and is the only LLM gateway for Codex, Claude Code and Hermes on the Mac and nucbox.
+CAS is uninstalled (code preserved at Willhong/claude-account-switch `5f7db1d`).
 
-- **Address:** https://llmproxy.hktlabs.com (management UI `/management.html`, Codex base `/v1`).
-  Tailnet only: nucbox k3s Ingress -> Tailscale TCP serve `100.88.185.4:18318` -> Mac `127.0.0.1:18318`.
-  Domain/ingress details and rollback: `~/k8s-lab/llmproxy/HANDOFF.md`.
-- **Process:** launchd agent `com.hong.theo-proxy` (RunAtLoad, KeepAlive) runs
-  `~/.local/share/theo-proxy/bin/cli-proxy-api-strict`, built from core commit `e3e4bef`.
-  Restart with `launchctl kickstart -k gui/$(id -u)/com.hong.theo-proxy`. Do not start extra copies by hand.
-  An earlier `nohup` copy started from an agent shell died when that agent session was recycled.
-- **Routing:** strict conversation affinity is on (`routing.strict-conversation-affinity`), bindings in
-  `~/.local/share/theo-proxy/state/conversation-bindings.db`. New conversations are spread round-robin;
-  a conversation never moves to another account. See [Stock-client conversation handoff](STOCK-CONVERSATION-HANDOFF.md).
-- **Codex accounts:** both moved from CAS with refresh tokens; the proxy is the only refresh owner
-  (24h before expiry). CAS Codex slots and their Keychain items were removed. Mac `~/.codex/auth.json`
-  (same token as CAS slot 1) was moved to backups as `*.superseded-do-not-restore`.
-- **Clients:** Mac and nucbox `~/.codex/config.toml` use provider `cliproxy`
-  (Mac `http://127.0.0.1:18318/v1`, nucbox the domain), `requires_openai_auth=false`, `supports_websockets=true`.
-  All pre-cutover Mac Codex processes (BB threads, hongcore bridge, Codex desktop app) were restarted.
-- **Claude accounts:** still access-only copies used for usage display; they expire within hours and are
-  not used for inference. `hongkyungtack` Claude is rejected by its organization (403).
-- **Cache hit rate:** core commit `e3e4bef` aggregates input/cache-read tokens per credential and model in hourly
-  buckets (8 days) persisted to `~/.local/share/theo-proxy/state/cache-stats.json`, served at
-  `/v8/management/observability/usage/cache?window=1h|24h|7d`. The Ledger shows it per provider and per account
-  with a 1h/24h/7d selector. History starts 2026-10-15 16:37 KST.
-- **Logs:** file logging on (200 MB cap) in `~/.local/share/theo-proxy/auths/logs/`; the UI log viewer reads it.
-  Request body logging stays off because it would store prompts.
+- **Address:** https://llmproxy.hktlabs.com (management UI `/management.html`, OpenAI-compatible base `/v1`,
+  Anthropic base `/`). Tailnet only: nucbox k3s Ingress -> EndpointSlice `10.42.0.1:18318` (nucbox cni0 address).
+  Domain/ingress details, rollback and the full change log: `~/k8s-lab/llmproxy/HANDOFF.md`.
+- **Process:** nucbox systemd user service `theo-proxy` (linger on, `Restart=always`) runs
+  `~/.local/share/theo-proxy/bin/cli-proxy-api-strict` (linux/amd64) built from core commit `4cf8c85`.
+  Manage with `systemctl --user restart|status theo-proxy`; logs in `~/.local/share/theo-proxy/auths/logs/main.log`.
+  The Mac launchd agent and Mac SSH tunnel are removed; Mac copies of credentials are archived as do-not-restore.
+- **Routing (core `4cf8c85`):** strict conversation affinity, bindings in `state/conversation-bindings.db`.
+  One account per (caller, conversation, provider), so Hermes can mix Claude and Codex in one conversation.
+  A conversation moves to another account of the same provider only when its account is cooling down after a
+  quota/rate-limit error; other failures fail closed. Image generation/edit requests without a conversation ID are
+  one-shot (any account, no binding). See `cli-proxy-api/docs/strict-conversation-routing.md`.
+- **Accounts (all with refresh tokens, the proxy is the only refresh owner):** Codex `hongkyungtack` (Pro Lite),
+  Codex `hbilly2002` (Pro), Claude `hbilly2002` (separate OAuth login made for the proxy on 2026-10-15).
+  Automatic refresh observed for both Codex accounts and Claude. Only one Claude account: no Claude move target.
+- **Clients:**
+  - Codex (Mac, nucbox): `~/.codex/config.toml` provider `cliproxy` -> domain `/v1`, WebSocket on.
+  - Mac `~/.codex/auth.json` is a separate ChatGPT login used only by BB voice transcription and HongCore's
+    login check; Codex inference ignores it (provider `cliproxy`). Its token family differs from the proxy's.
+  - Claude Code (Mac, nucbox): `~/.claude/settings.json` env `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`
+    (proxy client key), `ENABLE_TOOL_SEARCH=true` (without it every MCP schema is inlined and cache is lost).
+    claude.ai connectors are disabled while an auth token is set.
+  - Hermes (default + 8 profiles): custom provider `llmproxy` with `session_affinity_header: X-Hermes-Session-ID`,
+    `chat_completions` transport; model, fallback, auxiliary, MoA and image generation use it.
+  - BB sidebar usage (`usage-tracker` plugin) reads the proxy management API at the domain.
+- **Cache hit rate / logs:** as before (cache-stats in `state/cache-stats.json`, file logs capped at 200 MB,
+  request bodies not logged; error logs do keep request bodies, up to 10 files).
 
-Verified live on 2026-10-15: Mac/nucbox CLI and BB Codex threads route through the proxy, keep their
-account across thread stop/resume and proxy restarts, and reuse prompt cache (about 90% of input after the
-first request). WebSocket transport works on the Mac and through the domain; resumed WebSocket turns hit
-98-99% cache. The first request of a conversation that moved onto the proxy misses cache once.
+Verified live 2026-10-15/16: new and resumed conversations for Codex CLI, BB Codex/Claude threads on Mac and nucbox,
+Claude Code and Hermes CLI keep their account and recall context; cache reuse ~88-99% after the first request;
+same-conversation Claude + Codex (Hermes title generation) works; image generation through the proxy works.
+Not observed live: an actual quota-triggered account move, Hermes fallback and MoA calls.
 
 BB/Hermes source patches from the earlier experiment are excluded from adoption.
 The sections below the next heading record the earlier UI/usage milestone.
@@ -44,20 +48,22 @@ The sections below the next heading record the earlier UI/usage milestone.
 - UI upstream starting commit: `390718e`.
 - Existing core fork reused: https://github.com/Willhong/CLIProxyAPI
 - Core checkout: `/Users/hong-kyungtack/workspace/cli-proxy-api`, branch `feat/theo-console`.
-- Core branch starts from upstream `0d18d3b365be000eeaee7de4615f9da596b2059d`; strict conversation routing is commit `22a67b7`.
+- Core branch starts from upstream `0d18d3b365be000eeaee7de4615f9da596b2059d`; strict conversation routing `22a67b7`,
+  cache hit rates `e3e4bef`, per-provider bindings / quota move / one-shot images `4cf8c85`.
 - Existing remote core main and all older feature branches are untouched.
-- Both branches are committed locally only; no push, release, or upstream PR was requested or performed.
+- Both branches are pushed to the Willhong forks as new branches. No release or upstream PR was made.
 
 ## Running surfaces
 
 - Application: https://llmproxy.hktlabs.com/management.html (tailnet only, management key required).
 - The reference preview (`:8424`) and the old Tailscale runtime address (`:8423`) were shut down on 2026-10-15
   and removed from serve-preview. Start the preview again with the commands under Rebuild/restart when needed.
-- Local runtime directory: `/Users/hong-kyungtack/.local/share/theo-proxy` (0700).
+- Runtime directory: nucbox `/home/will/.local/share/theo-proxy` (0700). The Mac directory of the same name now only
+  keeps binaries, backups and the management `secrets.json` used by local tools.
 - Local keys: `secrets.json` inside that directory (0600). Never put its content in chat, URLs, git or screenshots.
-- Runtime config: `config.yaml`; `auths/` holds two Codex credentials with refresh tokens and two access-only Claude copies; custom built asset: `static/management.html`.
+- Runtime config: `config.yaml`; `auths/` holds two Codex and one Claude credential, all with refresh tokens; custom built asset: `static/management.html`.
 - `disable-auto-update-panel: true` prevents upstream from replacing this custom build.
-- Management and inference both require their own generated keys. The listener binds only 127.0.0.1:18318.
+- Management and inference both require their own generated keys. The listener binds only nucbox 10.42.0.1:18318.
 
 ## First CAS usage verification (2026-10-14, superseded for Codex)
 
@@ -118,7 +124,8 @@ GOMAXPROCS=4 go build -p 4 -o <binary-path> ./cmd/server
 GOMAXPROCS=4 <binary-path> --config <state-dir>/config.yaml --local-model
 ```
 
-The live binary is `~/.local/share/theo-proxy/bin/cli-proxy-api-strict`; after rebuilding it, restart the launchd agent.
+The live binary is nucbox `~/.local/share/theo-proxy/bin/cli-proxy-api-strict`. Build with
+`GOOS=linux GOARCH=amd64 CGO_ENABLED=0`, copy it there, back up the binary and bindings DB, then `systemctl --user restart theo-proxy`.
 For the preview only, use the serve-preview skill to publish at the ROOT, then append `/preview/` to the URL.
 Its `--path` is a proxy mount, not a browser page path; mounting Vite at `/preview/` strips that prefix and breaks absolute imports.
 
@@ -152,15 +159,15 @@ Evidence is retained in `/Users/hong-kyungtack/.bb/thread-storage/thr_czrmv7mpdk
 
 ## What is not done
 
-- Claude cutover: Claude accounts are not migrated with refresh tokens and Claude Code/Hermes are not pointed at the proxy.
-  Remove or replace the `hongkyungtack` Claude entry (organization rejects OAuth).
+- Quota-triggered account move is covered by tests only; not yet observed on a real exhausted account.
+- Hermes fallback and MoA through the proxy were not exercised live.
+- The ChatGPT desktop app's built-in Codex still talks to OpenAI directly; it was not restarted onto the proxy.
 - Soonest-reset routing is on hold by the owner's decision. The UI sort is not the backend routing policy.
-- WebSocket latency was not benchmarked against HTTP; only correctness, account pinning and cache reuse were checked.
+- WebSocket latency was not benchmarked against HTTP.
 - If a client loses its conversation identity (for example a failed ACP `session/load` that falls back to
   `session/new`), the proxy treats it as a new conversation. Not solvable without client changes.
 - Per-request account attribution is not logged (usage statistics are off); account checks rely on credential counters and bindings.
 - nucbox REA MCP calls fail; unrelated to the proxy.
-- Nothing is pushed. Pushing both branches is the remaining step to preserve the code off this Mac.
 - The preview is a reference reconstruction, not full behavioral or pixel parity with Theo's private fork.
 
 ## Implementation choices made here
@@ -181,3 +188,7 @@ CAS/client backup preservation does not guarantee old refresh tokens remain vali
 The subsequent request “일단 계정 연결만 먼저 옮겨서 usage 페이지 잘 나오나 보자” authorized
 account import and usage verification. On 2026-10-15 the owner asked to move only Codex: refresh tokens
 were transferred, CAS Codex slots removed, and the Mac and nucbox Codex clients cut over. Claude stays on CAS.
+On 2026-10-15/16 the owner then approved: moving the proxy to nucbox, migrating Claude (new proxy login) and
+switching Claude Code on the Mac and nucbox, connecting Hermes and all its profiles, per-provider bindings,
+moving off quota-exhausted accounts, one-shot image requests, retiring the old nucbox CLIProxyAPI (port 8317,
+archived under nucbox `~/archive/`) and uninstalling CAS.
