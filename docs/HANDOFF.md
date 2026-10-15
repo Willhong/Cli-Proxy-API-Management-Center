@@ -1,5 +1,38 @@
 # Theo fork: local run and handoff
 
+## Current state (2026-10-15)
+
+The proxy is the live Codex gateway for the Mac and nucbox; Claude still runs through CAS.
+
+- **Address:** https://llmproxy.hktlabs.com (management UI `/management.html`, Codex base `/v1`).
+  Tailnet only: nucbox k3s Ingress -> Tailscale TCP serve `100.88.185.4:18318` -> Mac `127.0.0.1:18318`.
+  Domain/ingress details and rollback: `~/k8s-lab/llmproxy/HANDOFF.md`.
+- **Process:** launchd agent `com.hong.theo-proxy` (RunAtLoad, KeepAlive) runs
+  `~/.local/share/theo-proxy/bin/cli-proxy-api-strict`, built from core commit `22a67b7`.
+  Restart with `launchctl kickstart -k gui/$(id -u)/com.hong.theo-proxy`. Do not start extra copies by hand.
+  An earlier `nohup` copy started from an agent shell died when that agent session was recycled.
+- **Routing:** strict conversation affinity is on (`routing.strict-conversation-affinity`), bindings in
+  `~/.local/share/theo-proxy/state/conversation-bindings.db`. New conversations are spread round-robin;
+  a conversation never moves to another account. See [Stock-client conversation handoff](STOCK-CONVERSATION-HANDOFF.md).
+- **Codex accounts:** both moved from CAS with refresh tokens; the proxy is the only refresh owner
+  (24h before expiry). CAS Codex slots and their Keychain items were removed. Mac `~/.codex/auth.json`
+  (same token as CAS slot 1) was moved to backups as `*.superseded-do-not-restore`.
+- **Clients:** Mac and nucbox `~/.codex/config.toml` use provider `cliproxy`
+  (Mac `http://127.0.0.1:18318/v1`, nucbox the domain), `requires_openai_auth=false`, `supports_websockets=true`.
+  All pre-cutover Mac Codex processes (BB threads, hongcore bridge, Codex desktop app) were restarted.
+- **Claude accounts:** still access-only copies used for usage display; they expire within hours and are
+  not used for inference. `hongkyungtack` Claude is rejected by its organization (403).
+- **Logs:** file logging on (200 MB cap) in `~/.local/share/theo-proxy/auths/logs/`; the UI log viewer reads it.
+  Request body logging stays off because it would store prompts.
+
+Verified live on 2026-10-15: Mac/nucbox CLI and BB Codex threads route through the proxy, keep their
+account across thread stop/resume and proxy restarts, and reuse prompt cache (about 90% of input after the
+first request). WebSocket transport works on the Mac and through the domain; resumed WebSocket turns hit
+98-99% cache. The first request of a conversation that moved onto the proxy misses cache once.
+
+BB/Hermes source patches from the earlier experiment are excluded from adoption.
+The sections below the next heading record the earlier UI/usage milestone.
+
 ## Repositories
 
 - UI fork: https://github.com/Willhong/Cli-Proxy-API-Management-Center
@@ -7,26 +40,22 @@
 - UI upstream starting commit: `390718e`.
 - Existing core fork reused: https://github.com/Willhong/CLIProxyAPI
 - Core checkout: `/Users/hong-kyungtack/workspace/cli-proxy-api`, branch `feat/theo-console`.
-- Core branch starts from upstream `0d18d3b365be000eeaee7de4615f9da596b2059d`; no Go source changes.
+- Core branch starts from upstream `0d18d3b365be000eeaee7de4615f9da596b2059d`; strict conversation routing is commit `22a67b7`.
 - Existing remote core main and all older feature branches are untouched.
-- The UI customization is local; no push, release, or upstream PR was requested or performed.
+- Both branches are committed locally only; no push, release, or upstream PR was requested or performed.
 
 ## Running surfaces
 
-- Reference preview: https://macbookpro.tail29b79c.ts.net:8424/preview/
-- Actual application: https://macbookpro.tail29b79c.ts.net:8423/management.html#/quota
-- Both are tailnet-only. The actual application still requires a management key.
-- The preview displays synthetic data and offers original-frame/state comparisons; it is not an account connection.
-- Four CAS accounts are registered for usage verification: Claude slots 1/2 and Codex slots 1/2. Only current access tokens (and Codex identity metadata) were copied. No refresh tokens were imported; CAS and live CLI configuration remain unchanged.
+- Application: https://llmproxy.hktlabs.com/management.html (tailnet only, management key required).
+- The reference preview (`:8424`) and the old Tailscale runtime address (`:8423`) were shut down on 2026-10-15
+  and removed from serve-preview. Start the preview again with the commands under Rebuild/restart when needed.
 - Local runtime directory: `/Users/hong-kyungtack/.local/share/theo-proxy` (0700).
 - Local keys: `secrets.json` inside that directory (0600). Never put its content in chat, URLs, git or screenshots.
-- Runtime config: `config.yaml`; separate `auths/` containing the four access-only CAS imports; custom built asset: `static/management.html`.
+- Runtime config: `config.yaml`; `auths/` holds two Codex credentials with refresh tokens and two access-only Claude copies; custom built asset: `static/management.html`.
 - `disable-auto-update-panel: true` prevents upstream from replacing this custom build.
 - Management and inference both require their own generated keys. The listener binds only 127.0.0.1:18318.
-- Serve-preview registration names: `theo-proxy-preview`, `theo-proxy-runtime`.
-- A temporary incorrect preview mount was removed; port 8423 now intentionally points to the real runtime.
 
-## Current CAS usage verification
+## First CAS usage verification (2026-10-14, superseded for Codex)
 
 The user authorized the first import/usage check, not the full CLI cutover.
 `scripts/import_cas_usage.py` was exercised in dry-run and apply modes. It reads CAS slot
@@ -85,8 +114,8 @@ GOMAXPROCS=4 go build -p 4 -o <binary-path> ./cmd/server
 GOMAXPROCS=4 <binary-path> --config <state-dir>/config.yaml --local-model
 ```
 
-Current binary is `/Users/hong-kyungtack/.bb/thread-storage/thr_czrmv7mpdk/cli-proxy-api`.
-Use the serve-preview skill to publish at the ROOT, then append `/preview/` or `/management.html` to the URL.
+The live binary is `~/.local/share/theo-proxy/bin/cli-proxy-api-strict`; after rebuilding it, restart the launchd agent.
+For the preview only, use the serve-preview skill to publish at the ROOT, then append `/preview/` to the URL.
 Its `--path` is a proxy mount, not a browser page path; mounting Vite at `/preview/` strips that prefix and breaks absolute imports.
 
 ## Verified
@@ -119,11 +148,15 @@ Evidence is retained in `/Users/hong-kyungtack/.bb/thread-storage/thr_czrmv7mpdk
 
 ## What is not done
 
-- The owner accepted this screen and explicitly requested account import plus usage verification. Live quota fetch is verified for three accounts; one Claude account is rejected by its provider. New OAuth login and inference have not been performed.
-- No soonest-reset routing algorithm has been implemented. The UI sort is not the backend routing policy.
-- WebSocket behavior was not modified or benchmarked; the current core already has support but inference through the imported accounts is not tested.
-- Session affinity was not changed. The limited access-only import is approved and completed; refresh ownership and CLI cutover remain pending.
-- No public deployment, release or auto-start service was installed.
+- Claude cutover: Claude accounts are not migrated with refresh tokens and Claude Code/Hermes are not pointed at the proxy.
+  Remove or replace the `hongkyungtack` Claude entry (organization rejects OAuth).
+- Soonest-reset routing is on hold by the owner's decision. The UI sort is not the backend routing policy.
+- WebSocket latency was not benchmarked against HTTP; only correctness, account pinning and cache reuse were checked.
+- If a client loses its conversation identity (for example a failed ACP `session/load` that falls back to
+  `session/new`), the proxy treats it as a new conversation. Not solvable without client changes.
+- Per-request account attribution is not logged (usage statistics are off); account checks rely on credential counters and bindings.
+- nucbox REA MCP calls fail; unrelated to the proxy.
+- Nothing is pushed. Pushing both branches is the remaining step to preserve the code off this Mac.
 - The preview is a reference reconstruction, not full behavioral or pixel parity with Theo's private fork.
 
 ## Implementation choices made here
@@ -142,5 +175,5 @@ owner refreshes a migrated credential. Verify one-account quota/inference before
 Do not require fresh login by default; ask only for credentials that cannot actually be reused.
 CAS/client backup preservation does not guarantee old refresh tokens remain valid after rotation.
 The subsequent request “일단 계정 연결만 먼저 옮겨서 usage 페이지 잘 나오나 보자” authorized
-account import and usage verification. That limited step is now completed as documented below;
-stopping sessions, full refresh-token transfer, client cutover, CAS removal and push are not performed.
+account import and usage verification. On 2026-10-15 the owner asked to move only Codex: refresh tokens
+were transferred, CAS Codex slots removed, and the Mac and nucbox Codex clients cut over. Claude stays on CAS.
