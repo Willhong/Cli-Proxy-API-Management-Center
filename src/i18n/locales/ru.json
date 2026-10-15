@@ -1589,7 +1589,15 @@
     "idle": "Обновите для загрузки квоты",
     "loading": "Загрузка квоты…",
     "more": "Ещё {{count}}",
-    "less": "Свернуть"
+    "less": "Свернуть",
+    "cache_window": "Период попаданий в кэш",
+    "cache_window_1h": "Последний час",
+    "cache_window_24h": "Последние 24 часа",
+    "cache_window_7d": "Последние 7 дней",
+    "cache_hit": "Попадание в кэш",
+    "cache_requests": "{{count}} запр.",
+    "cache_hint": "{{window}}: {{cached}} из {{input}} входных токенов взяты из кэша промптов",
+    "cache_none": "{{window}}: нет запросов через этот прокси"
   },
   "quota_management": {
     "search_label": "Поиск аккаунтов",

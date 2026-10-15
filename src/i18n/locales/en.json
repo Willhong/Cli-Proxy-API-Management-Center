@@ -1586,7 +1586,15 @@
     "idle": "Refresh quota to load",
     "loading": "Loading quota…",
     "more": "Show {{count}} more",
-    "less": "Show less"
+    "less": "Show less",
+    "cache_window": "Cache hit window",
+    "cache_window_1h": "Last 1 hour",
+    "cache_window_24h": "Last 24 hours",
+    "cache_window_7d": "Last 7 days",
+    "cache_hit": "Cache hit",
+    "cache_requests": "{{count}} req",
+    "cache_hint": "{{window}}: {{cached}} of {{input}} input tokens were served from the prompt cache",
+    "cache_none": "{{window}}: no requests through this proxy"
   },
   "quota_management": {
     "search_label": "Search accounts",

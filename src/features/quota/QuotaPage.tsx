@@ -13,7 +13,12 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { QuotaLedger, QuotaLedgerSummary } from './components/QuotaLedger';
 import { maskLedgerIdentity } from './ledgerModel';
-import { authFilesApi } from '@/services/api';
+import {
+  authFilesApi,
+  cacheStatsApi,
+  type CacheStatsSnapshot,
+  type CacheStatsWindow,
+} from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconSearch, IconX } from '@/components/ui/icons';
@@ -81,6 +86,8 @@ export function QuotaPage() {
   const [search, setSearch] = useState('');
   const [view, setView] = useState('ledger');
   const [showEmails, setShowEmails] = useState(false);
+  const [cacheWindow, setCacheWindow] = useState<CacheStatsWindow>('24h');
+  const [cacheStats, setCacheStats] = useState<CacheStatsSnapshot | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
@@ -119,7 +126,38 @@ export function QuotaPage() {
     }
   }, [connectionStatus, sessionGeneration, t]);
 
-  useHeaderRefresh(loadFiles);
+  /* ---------- 캐시 적중률 ----------
+   * 백엔드가 이 경로를 지원하지 않으면 조용히 비워 두고 '--'로 표시한다. */
+
+  const cacheRequestRef = useRef(0);
+  const loadCacheStats = useCallback(async () => {
+    const requestId = ++cacheRequestRef.current;
+    if (connectionStatus !== 'connected') {
+      setCacheStats(null);
+      return;
+    }
+    try {
+      const data = await cacheStatsApi.get(cacheWindow);
+      if (requestId === cacheRequestRef.current) setCacheStats(data);
+    } catch {
+      if (requestId === cacheRequestRef.current) setCacheStats(null);
+    }
+  }, [connectionStatus, cacheWindow]);
+
+  useEffect(() => {
+    void loadCacheStats();
+    const timer = window.setInterval(() => void loadCacheStats(), 60_000);
+    return () => {
+      window.clearInterval(timer);
+      cacheRequestRef.current += 1;
+    };
+  }, [loadCacheStats]);
+
+  const refreshPage = useCallback(async () => {
+    await Promise.all([loadFiles(), loadCacheStats()]);
+  }, [loadFiles, loadCacheStats]);
+
+  useHeaderRefresh(refreshPage);
 
   useEffect(() => {
     void loadFiles();
@@ -356,11 +394,27 @@ export function QuotaPage() {
             onChange={setView}
             ariaLabel={t('quota_ledger.view')}
             size="sm"
+            fullWidth={false}
+            className={styles.viewSelect}
             options={[
               { value: 'ledger', label: t('quota_ledger.ledger') },
               { value: 'cards', label: t('quota_ledger.cards') },
             ]}
           />
+          {view === 'ledger' && (
+            <Select
+              value={cacheWindow}
+              onChange={(value) => setCacheWindow(value as CacheStatsWindow)}
+              ariaLabel={t('quota_ledger.cache_window')}
+              size="sm"
+              fullWidth={false}
+              className={styles.viewSelect}
+              options={(['1h', '24h', '7d'] as const).map((value) => ({
+                value,
+                label: t(`quota_ledger.cache_window_${value}`),
+              }))}
+            />
+          )}
         </div>
 
         {view === 'ledger' && !loading && !error && (
@@ -368,6 +422,8 @@ export function QuotaPage() {
             entries={filteredEntries}
             quotaFor={getQuota}
             resolvedTheme={resolvedTheme}
+            cacheStats={cacheStats}
+            cacheWindowLabel={t(`quota_ledger.cache_window_${cacheWindow}`)}
           />
         )}
 
@@ -463,6 +519,8 @@ export function QuotaPage() {
             quotaFor={getQuota}
             resolvedTheme={resolvedTheme}
             showEmails={showEmails}
+            cacheStats={cacheStats}
+            cacheWindowLabel={t(`quota_ledger.cache_window_${cacheWindow}`)}
             canRefresh={canUseActions && !resettingQuotaName}
             onRefresh={(entry) => void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
           />

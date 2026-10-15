@@ -1585,7 +1585,15 @@
     "idle": "刷新以加载额度",
     "loading": "加载额度中…",
     "more": "显示另外 {{count}} 项",
-    "less": "收起"
+    "less": "收起",
+    "cache_window": "缓存命中统计周期",
+    "cache_window_1h": "最近 1 小时",
+    "cache_window_24h": "最近 24 小时",
+    "cache_window_7d": "最近 7 天",
+    "cache_hit": "缓存命中",
+    "cache_requests": "{{count}} 次请求",
+    "cache_hint": "{{window}}：{{input}} 个输入 token 中有 {{cached}} 个来自提示缓存",
+    "cache_none": "{{window}}：没有经过此代理的请求"
   },
   "quota_management": {
     "search_label": "搜索账号",

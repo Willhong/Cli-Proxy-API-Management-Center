@@ -1613,7 +1613,15 @@
     "idle": "重新整理以載入配額",
     "loading": "載入配額中…",
     "more": "顯示另外 {{count}} 項",
-    "less": "收合"
+    "less": "收合",
+    "cache_window": "快取命中統計週期",
+    "cache_window_1h": "最近 1 小時",
+    "cache_window_24h": "最近 24 小時",
+    "cache_window_7d": "最近 7 天",
+    "cache_hit": "快取命中",
+    "cache_requests": "{{count}} 次請求",
+    "cache_hint": "{{window}}：{{input}} 個輸入 token 中有 {{cached}} 個來自提示快取",
+    "cache_none": "{{window}}：沒有經過此代理的請求"
   },
   "quota_management": {
     "search_label": "搜尋帳號",

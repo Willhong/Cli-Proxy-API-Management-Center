@@ -15,6 +15,8 @@ import {
   summarizeLedger,
   type LedgerWindow,
 } from '../ledgerModel';
+import type { CacheStatsCounts, CacheStatsSnapshot } from '@/services/api';
+import { cacheStatsFor, formatHitRate, sumCacheStats } from '../cacheStatsModel';
 import styles from './QuotaLedger.module.scss';
 
 export interface QuotaLedgerProps {
@@ -22,6 +24,9 @@ export interface QuotaLedgerProps {
   quotaFor: (entry: QuotaFileEntry) => QuotaCardState | undefined;
   resolvedTheme: ResolvedTheme;
   showEmails: boolean;
+  /** Prompt-cache statistics for the selected window; null when unavailable. */
+  cacheStats?: CacheStatsSnapshot | null;
+  cacheWindowLabel?: string;
   canRefresh: boolean;
   onRefresh: (entry: QuotaFileEntry) => void;
   /** Fixed only in the reference preview; production uses the shared clock. */
@@ -54,6 +59,34 @@ function Meter({ value, label }: { value: number | null; label: string }) {
   );
 }
 
+function CacheHit({
+  stats,
+  windowLabel,
+  className,
+}: {
+  stats: CacheStatsCounts | undefined;
+  windowLabel: string;
+  className: string;
+}) {
+  const { t, i18n } = useTranslation();
+  const number = new Intl.NumberFormat(i18n.resolvedLanguage);
+  const title = stats?.input_tokens
+    ? t('quota_ledger.cache_hint', {
+        window: windowLabel,
+        cached: number.format(stats.cache_read_tokens),
+        input: number.format(stats.input_tokens),
+      })
+    : t('quota_ledger.cache_none', { window: windowLabel });
+  return (
+    <span className={className} title={title}>
+      {t('quota_ledger.cache_hit')} <strong>{formatHitRate(stats?.hit_rate)}</strong>
+      {stats && stats.requests > 0 && (
+        <> · {t('quota_ledger.cache_requests', { count: stats.requests })}</>
+      )}
+    </span>
+  );
+}
+
 function Reset({
   window: w,
   now,
@@ -82,7 +115,12 @@ export function QuotaLedgerSummary({
   quotaFor,
   resolvedTheme,
   nowOverride,
-}: Pick<QuotaLedgerProps, 'entries' | 'quotaFor' | 'resolvedTheme' | 'nowOverride'>) {
+  cacheStats,
+  cacheWindowLabel = '',
+}: Pick<
+  QuotaLedgerProps,
+  'entries' | 'quotaFor' | 'resolvedTheme' | 'nowOverride' | 'cacheStats' | 'cacheWindowLabel'
+>) {
   const { t } = useTranslation();
   const tick = useNow();
   const now = nowOverride ?? tick;
@@ -136,6 +174,17 @@ export function QuotaLedgerSummary({
               ))}
             </div>
             <Reset window={summary} now={now} />
+            {cacheStats !== undefined && (
+              <CacheHit
+                className={styles.cacheSummary}
+                stats={
+                  cacheStats
+                    ? sumCacheStats(group.entries.map((e) => cacheStatsFor(e.file, cacheStats)))
+                    : undefined
+                }
+                windowLabel={cacheWindowLabel}
+              />
+            )}
             {secondary && (
               <div className={styles.secondary}>
                 <span>
@@ -193,6 +242,8 @@ function LedgerRow({
   entry,
   quota,
   showEmails,
+  cacheStats,
+  cacheWindowLabel,
   canRefresh,
   onRefresh,
   now,
@@ -201,6 +252,8 @@ function LedgerRow({
   quota: QuotaCardState | undefined;
   resolvedTheme: ResolvedTheme;
   showEmails: boolean;
+  cacheStats?: CacheStatsSnapshot | null;
+  cacheWindowLabel: string;
   canRefresh: boolean;
   onRefresh: () => void;
   now: number;
@@ -230,6 +283,13 @@ function LedgerRow({
           {plan}
           {entry.file.disabled && <> · {t('quota_ledger.disabled')}</>}
         </span>
+        {cacheStats !== undefined && (
+          <CacheHit
+            className={styles.cacheRow}
+            stats={cacheStatsFor(entry.file, cacheStats)}
+            windowLabel={cacheWindowLabel}
+          />
+        )}
       </div>
       <div className={styles.windows}>
         {status === 'success' && windows.length > 0 ? (
@@ -301,6 +361,8 @@ export function QuotaLedger(props: QuotaLedgerProps) {
                 quota={props.quotaFor(entry)}
                 resolvedTheme={props.resolvedTheme}
                 showEmails={props.showEmails}
+                cacheStats={props.cacheStats}
+                cacheWindowLabel={props.cacheWindowLabel ?? ''}
                 canRefresh={props.canRefresh}
                 onRefresh={() => props.onRefresh(entry)}
                 now={now}

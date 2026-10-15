@@ -8,7 +8,7 @@ The proxy is the live Codex gateway for the Mac and nucbox; Claude still runs th
   Tailnet only: nucbox k3s Ingress -> Tailscale TCP serve `100.88.185.4:18318` -> Mac `127.0.0.1:18318`.
   Domain/ingress details and rollback: `~/k8s-lab/llmproxy/HANDOFF.md`.
 - **Process:** launchd agent `com.hong.theo-proxy` (RunAtLoad, KeepAlive) runs
-  `~/.local/share/theo-proxy/bin/cli-proxy-api-strict`, built from core commit `22a67b7`.
+  `~/.local/share/theo-proxy/bin/cli-proxy-api-strict`, built from core commit `e3e4bef`.
   Restart with `launchctl kickstart -k gui/$(id -u)/com.hong.theo-proxy`. Do not start extra copies by hand.
   An earlier `nohup` copy started from an agent shell died when that agent session was recycled.
 - **Routing:** strict conversation affinity is on (`routing.strict-conversation-affinity`), bindings in
@@ -22,6 +22,10 @@ The proxy is the live Codex gateway for the Mac and nucbox; Claude still runs th
   All pre-cutover Mac Codex processes (BB threads, hongcore bridge, Codex desktop app) were restarted.
 - **Claude accounts:** still access-only copies used for usage display; they expire within hours and are
   not used for inference. `hongkyungtack` Claude is rejected by its organization (403).
+- **Cache hit rate:** core commit `e3e4bef` aggregates input/cache-read tokens per credential and model in hourly
+  buckets (8 days) persisted to `~/.local/share/theo-proxy/state/cache-stats.json`, served at
+  `/v8/management/observability/usage/cache?window=1h|24h|7d`. The Ledger shows it per provider and per account
+  with a 1h/24h/7d selector. History starts 2026-10-15 16:37 KST.
 - **Logs:** file logging on (200 MB cap) in `~/.local/share/theo-proxy/auths/logs/`; the UI log viewer reads it.
   Request body logging stays off because it would store prompts.
 

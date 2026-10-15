@@ -1586,7 +1586,15 @@
     "idle": "새로고침하여 한도를 조회하세요",
     "loading": "한도 조회 중…",
     "more": "{{count}}개 더 보기",
-    "less": "접기"
+    "less": "접기",
+    "cache_window": "캐시 적중률 기간",
+    "cache_window_1h": "최근 1시간",
+    "cache_window_24h": "최근 24시간",
+    "cache_window_7d": "최근 7일",
+    "cache_hit": "캐시 적중",
+    "cache_requests": "요청 {{count}}건",
+    "cache_hint": "{{window}}: 입력 토큰 {{input}}개 중 {{cached}}개를 프롬프트 캐시에서 읽음",
+    "cache_none": "{{window}}: 이 프록시를 거친 요청 없음"
   },
   "quota_management": {
     "search_label": "계정 검색",

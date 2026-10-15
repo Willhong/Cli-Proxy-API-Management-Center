@@ -1543,7 +1543,15 @@
     "idle": "Làm mới để tải hạn mức",
     "loading": "Đang tải hạn mức…",
     "more": "Hiện thêm {{count}}",
-    "less": "Thu gọn"
+    "less": "Thu gọn",
+    "cache_window": "Khoảng thời gian tỷ lệ cache",
+    "cache_window_1h": "1 giờ qua",
+    "cache_window_24h": "24 giờ qua",
+    "cache_window_7d": "7 ngày qua",
+    "cache_hit": "Trúng cache",
+    "cache_requests": "{{count}} yêu cầu",
+    "cache_hint": "{{window}}: {{cached}} trên {{input}} token đầu vào được lấy từ prompt cache",
+    "cache_none": "{{window}}: không có yêu cầu qua proxy này"
   },
   "quota_management": {
     "title": "Quản lý Quota",
