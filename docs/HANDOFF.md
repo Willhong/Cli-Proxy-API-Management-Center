@@ -38,6 +38,36 @@ Claude Code and Hermes CLI keep their account and recall context; cache reuse ~8
 same-conversation Claude + Codex (Hermes title generation) works; image generation through the proxy works.
 Not observed live: an actual quota-triggered account move, Hermes fallback and MoA calls.
 
+### External user path: `llmproxy-share` (2026-11-13)
+
+For a user outside the tailnet (경택's sister) without sharing nucbox itself. Sharing nucbox would expose every
+ingress host (Proxmox `192.168.0.77`, MacBook bb/code-server, argocd, ...) through the same 443, so it is not used.
+
+- **Node:** Tailscale machine `llmproxy-share` (`https://llmproxy-share.tail29b79c.ts.net`, `100.76.79.48`,
+  tag `tag:llmshare`, key expiry off) running on OCI `oci-a1-1c6g` as one container `llmshare` in
+  `~/services/llmshare/` (`compose.yaml`, `start.sh`, `nginx.conf`, state in `ts-state/`).
+  tailscaled + nginx run in the same container on purpose: with a separate nginx sharing the tailscale netns,
+  a restart left nginx in a stale namespace and every request returned 502.
+- **nginx:** proxies only to `https://100.77.154.10` with `Host: llmproxy.hktlabs.com` pinned and upstream TLS verified,
+  so a client-supplied Host cannot reach another ingress site. `/management.html`, `/v0/management*`, `/v8/management*` -> 404.
+- **Tailnet policy** (`grants`, marked `LLMSHARE`): `tag:llmshare` -> nucbox `tcp:443` only;
+  `autogroup:shared` -> `tag:llmshare` `tcp:443` only; a `tests` entry asserts the tag cannot reach nucbox 22/6443,
+  MacBook 443 or OCI 22. Policy history: `~/.config/tailscale-workpc/history/20261113-225206-{before-llmshare,llmshare}.hujson`.
+- **Client key:** separate entry in `access.api-keys` (2 keys now). Value stored only in nucbox
+  `~/.local/share/theo-proxy/secrets.json` as `sisterClientKey`. Backups before the change: `config.yaml.bak-20261113-sisterkey`,
+  `secrets.json.bak-20261113-sisterkey`. Claude still has one upstream account, so usage is shared with 경택.
+- **Client settings (Claude Code):** `ANTHROPIC_BASE_URL=https://llmproxy-share.tail29b79c.ts.net`,
+  `ANTHROPIC_AUTH_TOKEN=<sisterClientKey>`, `ENABLE_TOOL_SEARCH=true`. No custom conversation header: stock
+  `X-Claude-Code-Session-Id` is used; a fixed `X-CLIProxy-Conversation-ID` would override it.
+- **Verified from the Mac through the share node, before and after `docker compose restart`:** Messages 200,
+  SSE stream message_start..message_stop, missing/bad key 401, missing session 400 `conversation_id_required`,
+  management paths 404. Real Claude Code CLI (2.1.323, isolated `CLAUDE_CONFIG_DIR`) completed a Write tool turn.
+  From inside the node only nucbox:443 opens (nucbox 22/6443/18318/11434, MacBook 443/22, OCI 22, Proxmox 8006 blocked).
+- **Not done:** the actual share/invite to the sister's Tailscale account and a test from her machine.
+  Tailscale OAuth client in `~/.config/tailscale-workpc/oauth.json` has `policy_file` + device read only (cannot delete devices).
+- **Rollback:** `docker compose down` in `~/services/llmshare`, remove the machine in the Tailscale console, restore the
+  `before-llmshare` policy, and delete the second `access.api-keys` entry.
+
 BB/Hermes source patches from the earlier experiment are excluded from adoption.
 The sections below the next heading record the earlier UI/usage milestone.
 
