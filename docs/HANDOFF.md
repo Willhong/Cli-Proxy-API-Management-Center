@@ -63,6 +63,13 @@ ingress host (Proxmox `192.168.0.77`, MacBook bb/code-server, argocd, ...) throu
   SSE stream message_start..message_stop, missing/bad key 401, missing session 400 `conversation_id_required`,
   management paths 404. Real Claude Code CLI (2.1.323, isolated `CLAUDE_CONFIG_DIR`) completed a Write tool turn.
   From inside the node only nucbox:443 opens (nucbox 22/6443/18318/11434, MacBook 443/22, OCI 22, Proxmox 8006 blocked).
+- **Sister server (`chaem@chami3i.iptime.org`, Ubuntu 24.04, bb-app via npx) configured 2026-11-13, Tailscale not installed yet:**
+  Claude Code `~/.claude/settings.json` env (3 keys above); Codex `~/.codex/config.toml` provider `llmproxy`
+  (`/v1`, `wire_api=responses`, `experimental_bearer_token`, default `gpt-5.6-sol`, WebSocket not enabled);
+  pi `~/.pi/agent/models.json` provider `llmproxy` copied from the Mac with the share-node URL and
+  `X-CLIProxy-Conversation-ID` from `/proc/sys/kernel/random/uuid` (no `uuidgen` there), `settings.json` default
+  `llmproxy/claude-opus-5-5`. Backups `*.bak-20261113-*`. Mac-side test through the share node: pi + Claude OK
+  with a write tool; Codex/GPT returned 429 `model_cooldown` because slot-2 hit its usage limit and slot-1 is disabled.
 - **Not done:** the actual share/invite to the sister's Tailscale account and a test from her machine.
   Tailscale OAuth client in `~/.config/tailscale-workpc/oauth.json` has `policy_file` + device read only (cannot delete devices).
 - **Rollback:** `docker compose down` in `~/services/llmshare`, remove the machine in the Tailscale console, restore the
