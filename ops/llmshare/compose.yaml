@@ -1,0 +1,18 @@
+# llmproxy-share: Tailscale node (tag:llmshare) that forwards only to llmproxy on nucbox.
+# tailscaled + nginx run in ONE container so a restart can never leave nginx in a stale netns.
+services:
+  llmshare:
+    image: tailscale/tailscale:stable
+    container_name: llmshare
+    hostname: llmproxy-share
+    restart: unless-stopped
+    cap_add: [NET_ADMIN, NET_RAW]
+    devices: ["/dev/net/tun:/dev/net/tun"]
+    entrypoint: ["/bin/sh", "/llmshare/start.sh"]
+    volumes:
+      - ./ts-state:/var/lib/tailscale
+      - ./start.sh:/llmshare/start.sh:ro
+      - ./usage_filter.py:/llmshare/usage_filter.py:ro
+      - ./usage-secrets.json:/llmshare/usage-secrets.json:ro
+      - ./nginx.conf:/etc/nginx/http.d/default.conf:ro
+    mem_limit: 384m

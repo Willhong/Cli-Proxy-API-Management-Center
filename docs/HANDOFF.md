@@ -70,6 +70,15 @@ ingress host (Proxmox `192.168.0.77`, MacBook bb/code-server, argocd, ...) throu
   `X-CLIProxy-Conversation-ID` from `/proc/sys/kernel/random/uuid` (no `uuidgen` there), `settings.json` default
   `llmproxy/claude-opus-5-5`. Backups `*.bak-20261113-*`. Mac-side test through the share node: pi + Claude OK
   with a write tool; Codex/GPT returned 429 `model_cooldown` because slot-2 hit its usage limit and slot-1 is disabled.
+- **Read-only usage path (2026-11-14):** nginx sends `/v8/management/*` to `usage_filter.py` (127.0.0.1:8090, same container).
+  It accepts only a separate `usageReadToken` (not the management key, not a client key) and allows exactly
+  `GET /credentials` (reduced to provider/email/name/auth_index/plan fields) and `POST /requests/api-call` with
+  `method=GET` to the Codex/Claude usage URL of a known enabled account; upstream headers are rebuilt, caller headers dropped.
+  The real management key lives only in OCI `~/services/llmshare/usage-secrets.json` (0600). Everything else under
+  management stays 404. Verified from the Mac: credentials 200, both usage calls 200 with quota windows; no token / sister
+  client key / real management key → 401; other URL, POST method, unknown account → 403; config GET/PATCH, DELETE, v0, management.html → 404.
+  Sister bb `usage-tracker` settings: `codexProxyUrl=https://llmproxy-share.tail29b79c.ts.net`,
+  `proxyCredentialsFile=/home/chaem/.config/llmshare/usage-read.json` (0600, holds the read token under `managementKey`).
 - **Not done:** the actual share/invite to the sister's Tailscale account and a test from her machine.
   Tailscale OAuth client in `~/.config/tailscale-workpc/oauth.json` has `policy_file` + device read only (cannot delete devices).
 - **Rollback:** `docker compose down` in `~/services/llmshare`, remove the machine in the Tailscale console, restore the
